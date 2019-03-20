@@ -1,0 +1,171 @@
+<template>
+  <div class="container">
+    {{ msg }}
+    <div>
+      <input
+        type="text"
+        placeholder="What needs to be done"
+        class="todo-input"
+        v-model="newTodo"
+        @keyup.enter="addTodo"
+      />
+    </div>
+    <Todoitem
+      v-for="(todo, index) in todosFilter"
+      :key="index"
+      :todo="todo"
+      :index="index"
+      :checkAll="!anyRemaining"
+    >
+    </Todoitem>
+
+    <div>
+      <div>
+        <label
+          ><input
+            type="checkbox"
+            :checked="!anyRemaining"
+            @change="checkAllTodos();"
+          />
+          Check All</label
+        >
+      </div>
+      <div>
+        <small>{{ remaining }} items left</small>
+      </div>
+    </div>
+    <div>
+      <button
+        @click="filter = 'all';"
+        :class="{ currentFilter: filter === 'all' }"
+      >
+        all
+      </button>
+      <button
+        @click="filter = 'active';"
+        :class="{ currentFilter: filter === 'active' }"
+      >
+        active
+      </button>
+      <button
+        @click="filter = 'completed';"
+        :class="{ currentFilter: filter === 'completed' }"
+      >
+        completed
+      </button>
+    </div>
+    <div>
+      <button v-if="remaining < todos.length" @click="clearAllCompleted">
+        Clear all completed
+      </button>
+    </div>
+  </div>
+</template>
+
+<script>
+import Todoitem from "./Todoitem";
+
+export default {
+  name: "TodoList",
+  components: { Todoitem },
+  data() {
+    return {
+      msg: "Bienvenido a mi todo list",
+      newTodo: "",
+      beforeEdit: "",
+      filter: "all",
+      todos: [
+        { title: "Finish Vue Screencast", completed: false, editing: false },
+        { title: "Take over world", completed: false, editing: false },
+        { title: "Do Homework", completed: false, editing: false }
+      ]
+    };
+  },
+  created() {
+    eventBus.$on('deleTodo', (index) => this.deleteTodo(index))
+    eventBus.$on('finishedEdit', (data) => this.doneEdit(data))
+  },
+  computed: {
+    todosFilter() {
+      if (this.filter === "all") {
+        return this.todos;
+      } else if (this.filter === "active") {
+        return this.todos.filter(todo => {
+          return !todo.completed;
+        });
+      } else if (this.filter === "completed") {
+        return this.todos.filter(todo => {
+          return todo.completed === true;
+        });
+      }
+    },
+    remaining() {
+      return this.todos.filter(e => {
+        return e.completed === false;
+      }).length;
+    },
+    anyRemaining() {
+      return this.remaining;
+    }
+  },
+  methods: {
+    addTodo() {
+      let regexSpaces = /^\S+(?: \S+)*$/;
+
+      if (this.newTodo && this.newTodo.match(regexSpaces)) {
+        let newTodoUpperCase = this.newTodo.replace(
+          this.newTodo[0],
+          this.newTodo.split("")[0].toUpperCase()
+        );
+        this.todos.push({
+          title: newTodoUpperCase,
+          completed: false,
+          editing: false
+        });
+        this.newTodo = "";
+      }
+      this.newTodo = "";
+    },
+    editTodo(data) {
+      this.beforeEdit = data.todo.title;
+      this.todos[data.index].editing = true;
+    },
+    doneEdit(data) {
+      this.todos.splice(data.index, 1, data.todo);
+    },
+    deleteTodo(index) {
+      this.todos.splice(index, 1);
+    },
+    checkAllTodos() {
+      this.todos.forEach(todo => {
+        todo.completed = event.target.checked;
+      });
+    },
+    clearAllCompleted() {
+      this.todos = this.todos.filter(todo => {
+        return !todo.completed;
+      });
+    }
+  }
+};
+</script>
+
+<style>
+.todo-items ul {
+  list-style-type: none;
+}
+.todo-input {
+  width: 70%;
+  padding: 10px 18px;
+  font-size: 15px;
+  margin: 5px;
+}
+
+.completed {
+  text-decoration: line-through;
+  color: grey;
+}
+.currentFilter {
+  background: #a5dc86;
+}
+</style>
