@@ -1,0 +1,98 @@
+<template>
+  <div>
+    <div v-if="!editing" @dblclick="editTodo">
+      <input type="checkbox" v-model="completed" @change="doneEdit" />
+      {{ todo.title }}
+      <button type="button" @click="deleteTodo(index);">x</button>
+    </div>
+    <div v-else>
+      <input
+        type="text"
+        v-model="title"
+        @keyup.enter="doneEdit"
+        @blur="doneEdit"
+        v-focus
+        @keyup.esc="cancelEdit(todo);"
+      />
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  name: "Todoitem",
+  data() {
+    return {
+      title: this.todo.title,
+      editing: this.todo.editing,
+      completed: this.todo.completed,
+      beforeEdit: ""
+    };
+  },
+  props: {
+    todo: {
+      type: Object,
+      required: true
+    },
+    index: {
+      type: Number,
+      required: true
+    },
+    checkAll: {
+      type: Boolean,
+      required: true
+    }
+  },
+  directives: {
+    focus: {
+      // directive definition
+      inserted: function(el) {
+        el.focus();
+      }
+    }
+  },
+  watch: {
+    checkAll() {
+      if (this.checkAll) {
+        this.completed = true;
+      } else {
+        this.completed = this.todo.completed;
+      }
+    },
+    todo() {
+      this.title = this.todo.title
+      this.completed = this.todo.completed
+    }
+  },
+  methods: {
+    deleteTodo(index) {
+      eventBus.$emit("deleTodo", index);
+    },
+    editTodo() {
+      this.beforeEdit = this.title;
+      this.editing = true;
+    },
+    doneEdit() {
+      let regexSpaces = /^\S+(?: \S+)*$/;
+
+      if (this.title && this.title.match(regexSpaces)) {
+        this.editing = false;
+      } else {
+        this.cancelEdit();
+      }
+      eventBus.$emit("finishedEdit", {
+        index: this.index,
+        todo: {
+          title: this.title,
+          completed: this.completed,
+          editing: this.editing
+        }
+      });
+    },
+    cancelEdit() {
+      this.title = this.beforeEdit;
+      this.editing = false;
+    }
+  }
+};
+</script>
