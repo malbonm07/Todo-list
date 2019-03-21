@@ -1,0 +1,213 @@
+<template>
+  <div class="main-container">
+    <h1>{{ msg }}</h1>
+    <div id="search-box-container">
+      <input
+        type="text"
+        class="todo-input"
+        v-model="newTodo"
+        @keyup.enter="addTodo"
+        id="search-input"
+        required
+      >
+      <label id="search-label" for="search-input">To be done</label>
+    </div>
+    <div id="search-button-container">
+      <a type="button" @click="addTodo" id="search-button" class="btn btn-primary">Add new tarea</a>
+    </div>
+    <Todoitem
+      v-for="(todo, index) in todosFilter"
+      :key="index"
+      :todo="todo"
+      :index="index"
+      :checkAll="!anyRemaining"
+    ></Todoitem>
+
+    <div>
+      <div>
+        <label>
+          <input type="checkbox" :checked="!anyRemaining" @change="checkAllTodos();">
+          Check All
+        </label>
+      </div>
+      <div>
+        <small>{{ remaining }} items left</small>
+      </div>
+    </div>
+    <div>
+      <button @click="filter = 'all';" :class="{ currentFilter: filter === 'all' }">all</button>
+      <button @click="filter = 'active';" :class="{ currentFilter: filter === 'active' }">active</button>
+      <button
+        @click="filter = 'completed';"
+        :class="{ currentFilter: filter === 'completed' }"
+      >completed</button>
+    </div>
+    <div>
+      <button v-if="remaining < todos.length" @click="clearAllCompleted">Clear all completed</button>
+    </div>
+  </div>
+</template>
+
+<script>
+import Todoitem from "./Todoitem";
+
+export default {
+  name: "TodoList",
+  components: { Todoitem },
+  data() {
+    return {
+      msg: "Welcome to my TODO LIST.",
+      newTodo: "",
+      beforeEdit: "",
+      filter: "all",
+      todos: [
+        { title: "Finish Vue Screencast", completed: false, editing: false },
+        { title: "Take over world", completed: false, editing: false },
+        { title: "Do Homework", completed: false, editing: false }
+      ]
+    };
+  },
+  created() {
+    eventBus.$on("deleTodo", index => this.deleteTodo(index));
+    eventBus.$on("finishedEdit", data => this.doneEdit(data));
+  },
+  computed: {
+    todosFilter() {
+      if (this.filter === "all") {
+        return this.todos;
+      } else if (this.filter === "active") {
+        return this.todos.filter(todo => {
+          return !todo.completed;
+        });
+      } else if (this.filter === "completed") {
+        return this.todos.filter(todo => {
+          return todo.completed === true;
+        });
+      }
+    },
+    remaining() {
+      return this.todos.filter(e => {
+        return e.completed === false;
+      }).length;
+    },
+    anyRemaining() {
+      return this.remaining;
+    }
+  },
+  methods: {
+    addTodo() {
+      let regexSpaces = /^\S+(?: \S+)*$/;
+
+      if (this.newTodo && this.newTodo.match(regexSpaces)) {
+        let newTodoUpperCase = this.newTodo.replace(
+          this.newTodo[0],
+          this.newTodo.split("")[0].toUpperCase()
+        );
+        this.todos.push({
+          title: newTodoUpperCase,
+          completed: false,
+          editing: false
+        });
+        this.newTodo = "";
+      }
+      this.newTodo = "";
+    },
+    editTodo(data) {
+      this.beforeEdit = data.todo.title;
+      this.todos[data.index].editing = true;
+    },
+    doneEdit(data) {
+      this.todos.splice(data.index, 1, data.todo);
+    },
+    deleteTodo(index) {
+      this.todos.splice(index, 1);
+    },
+    checkAllTodos() {
+      this.todos.forEach(todo => {
+        todo.completed = event.target.checked;
+      });
+    },
+    clearAllCompleted() {
+      this.todos = this.todos.filter(todo => {
+        return !todo.completed;
+      });
+    }
+  }
+};
+</script>
+
+<style>
+.main-container {
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: column;
+}
+.todo-items ul {
+  list-style-type: none;
+}
+.completed {
+  text-decoration: line-through;
+  color: grey;
+}
+.currentFilter {
+  background: #a5dc86;
+}
+#search-input {
+  border: 0;
+  border-bottom: 2px solid #9e9e9e;
+  outline: none;
+  transition: 0.2s;
+  box-sizing: border-box;
+}
+
+#search-label {
+  top: 0;
+  left: 0;
+  right: 0;
+  color: #616161;
+  display: flex;
+  align-items: center;
+  position: absolute;
+  font-size: 1rem;
+  cursor: text;
+  transition: 0.2s;
+  box-sizing: border-box;
+}
+
+#search-input,
+#search-label {
+  width: 100%;
+  height: 3rem;
+  font-size: 1rem;
+}
+
+/* Interation */
+#search-input:valid,
+#search-input:focus {
+  border-bottom: 2px solid #26a69a;
+}
+
+#search-input:valid + #search-label,
+#search-input:focus + #search-label {
+  color: #26a69a;
+  font-size: 0.8rem;
+  top: -30px;
+  pointer-events: none;
+}
+#search-box-container {
+  width: 500px;
+  position: relative;
+  display: flex;
+}
+#search-button-container {
+  width: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#search-button {
+  display: flex;
+}
+</style>
